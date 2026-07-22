@@ -5,7 +5,7 @@ import { useSession } from "@/context/SessionContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PROSEDUR_MUNDUR, EMAIL_UPPS } from "@/lib/constants";
-import { BookOpen, AlertCircle, ShieldAlert, ArrowRight, HelpCircle, Mail } from "lucide-react";
+import { BookOpen, AlertCircle, ShieldAlert, ArrowRight, Mail } from "lucide-react";
 
 export default function ProsedurPage() {
   const { currentUser, isLoading } = useSession();

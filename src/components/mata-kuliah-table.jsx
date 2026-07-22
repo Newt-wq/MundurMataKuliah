@@ -15,13 +15,13 @@ export default function MataKuliahTable() {
   const watchFields = watch("daftarMatakuliah") || [];
 
   // Automatically calculate sum of SKS
-  const totalSks = watchFields.reduce((acc: number, curr: { sks?: number | string }) => {
+  const totalSks = watchFields.reduce((acc, curr) => {
     const val = Number(curr?.sks) || 0;
     return acc + val;
   }, 0);
 
   // Auto-fill when a course is chosen from catalog
-  const handleCatalogSelect = (index: number, selectedCode: string) => {
+  const handleCatalogSelect = (index, selectedCode) => {
     if (!selectedCode) return;
     
     const course = KATALOG_MATA_KULIAH.find((c) => c.kode === selectedCode);
@@ -83,7 +83,7 @@ export default function MataKuliahTable() {
           </thead>
           <tbody className="bg-white divide-y divide-slate-200">
             {fields.map((field, index) => {
-              const rowErrors = (errors.daftarMatakuliah as any)?.[index];
+              const rowErrors = errors.daftarMatakuliah?.[index];
               const currentKode = watchFields[index]?.kode || "";
 
               return (
@@ -111,7 +111,7 @@ export default function MataKuliahTable() {
                     <input
                       type="text"
                       placeholder="Kode MK (Manual)"
-                      {...register(`daftarMatakuliah.${index}.kode` as const)}
+                      {...register(`daftarMatakuliah.${index}.kode`)}
                       className={`w-full text-xs rounded border p-1.5 focus:outline-none focus:ring-1 focus:ring-primary-madani ${
                         rowErrors?.kode ? "border-red-400 bg-red-50/20" : "border-slate-300"
                       }`}
@@ -126,7 +126,7 @@ export default function MataKuliahTable() {
                     <input
                       type="text"
                       placeholder="Nama Lengkap Mata Kuliah"
-                      {...register(`daftarMatakuliah.${index}.nama` as const)}
+                      {...register(`daftarMatakuliah.${index}.nama`)}
                       className={`w-full text-xs rounded border p-1.5 focus:outline-none focus:ring-1 focus:ring-primary-madani ${
                         rowErrors?.nama ? "border-red-400 bg-red-50/20" : "border-slate-300"
                       }`}
@@ -143,7 +143,7 @@ export default function MataKuliahTable() {
                       placeholder="SKS"
                       min={1}
                       max={6}
-                      {...register(`daftarMatakuliah.${index}.sks` as const, { valueAsNumber: true })}
+                      {...register(`daftarMatakuliah.${index}.sks`, { valueAsNumber: true })}
                       className={`w-full text-xs rounded border p-1.5 focus:outline-none focus:ring-1 focus:ring-primary-madani ${
                         rowErrors?.sks ? "border-red-400 bg-red-50/20" : "border-slate-300"
                       }`}
@@ -187,10 +187,10 @@ export default function MataKuliahTable() {
         </table>
       </div>
 
-      {(errors.daftarMatakuliah as any)?.root && (
+      {errors.daftarMatakuliah?.root && (
         <div className="flex items-center gap-1.5 text-xs text-red-500 font-medium bg-red-50 p-2.5 rounded border border-red-200">
           <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-          <span>{(errors.daftarMatakuliah as any).root.message}</span>
+          <span>{errors.daftarMatakuliah.root.message}</span>
         </div>
       )}
 

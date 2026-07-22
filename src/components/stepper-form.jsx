@@ -10,32 +10,32 @@ import {
   step2Schema, 
   step3Schema, 
   step4Schema, 
-  pengajuanFormSchema, 
-  PengajuanFormData 
+  pengajuanFormSchema
 } from "@/lib/validations";
 import { PROSEDUR_MUNDUR } from "@/lib/constants";
 import MataKuliahTable from "./mata-kuliah-table";
-import { ChevronRight, ChevronLeft, Send, CheckCircle, User, BookOpen, FileText, HelpCircle, AlertTriangle } from "lucide-react";
+import { ChevronRight, ChevronLeft, Send, CheckCircle, User, BookOpen, FileText, AlertTriangle } from "lucide-react";
 
 export default function StepperForm() {
   const { currentUser, createPengajuan } = useSession();
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [konfirmasiReview, setKonfirmasiReview] = useState(false);
 
-  // Smooth scroll to the top of the page on step changes to prevent page jumps
+  // Smooth scroll to top on step change
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [step]);
 
-  const methods = useForm<PengajuanFormData>({
+  const methods = useForm({
     resolver: zodResolver(
       step === 1 ? step1Schema :
       step === 2 ? step2Schema :
       step === 3 ? step3Schema :
       step === 4 ? step4Schema : 
       pengajuanFormSchema
-    ) as any,
+    ),
     defaultValues: {
       namaMahasiswa: currentUser?.name || "",
       nim: currentUser?.nim || "",
@@ -44,10 +44,7 @@ export default function StepperForm() {
       alamat: currentUser?.alamat || "",
       daftarMatakuliah: [{ kode: "", nama: "", sks: 3 }],
       alasan: "",
-      // step 1 & 4 checkboxes are managed inside local trigger checks
-      // @ts-ignore
       setujuKetentuan: false,
-      // @ts-ignore
       diketahuiPA: false
     },
     mode: "onChange",
@@ -65,7 +62,7 @@ export default function StepperForm() {
   ];
 
   const handleNext = async () => {
-    let fieldsToValidate: any[] = [];
+    let fieldsToValidate = [];
     if (step === 1) {
       fieldsToValidate = ["setujuKetentuan"];
     } else if (step === 2) {
@@ -86,13 +83,15 @@ export default function StepperForm() {
     setStep((prev) => prev - 1);
   };
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data) => {
+    if (step !== 5) return;
+
     setIsSubmitting(true);
     // Simulate API request delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
     
     try {
-      const newRequest = createPengajuan(data.alamat, data.alasan, data.daftarMatakuliah);
+      const newRequest = createPengajuan(data);
       setIsSubmitting(false);
       // Redirect to status tracking page
       router.push(`/pengajuan/${newRequest.id}/status`);
@@ -110,10 +109,10 @@ export default function StepperForm() {
       {/* Stepper Header Progress Indicator */}
       <div className="bg-slate-50 border-b border-slate-200 px-4 py-5 sm:px-6">
         <div className="hidden sm:block relative">
-          {/* Background connecting line from center of first step (10%) to center of last step (90%) */}
+          {/* Background connecting line */}
           <div className="absolute top-4 left-[10%] right-[10%] h-[2px] bg-slate-200 -translate-y-1/2 z-0" />
           
-          {/* Active progress line connecting centers */}
+          {/* Active progress line */}
           <div 
             className="absolute top-4 left-[10%] h-[2px] bg-emerald-500 -translate-y-1/2 transition-all duration-300 z-0"
             style={{ 
@@ -130,7 +129,6 @@ export default function StepperForm() {
 
               return (
                 <div key={s.title} className="flex flex-col items-center flex-1">
-                  {/* Circle */}
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                       isCompleted
@@ -143,7 +141,6 @@ export default function StepperForm() {
                     {isCompleted ? <CheckCircle className="w-5 h-5" /> : stepNum}
                   </div>
 
-                  {/* Text labels centered underneath the circle */}
                   <div className="text-center mt-2 px-1 max-w-[120px]">
                     <p
                       className={`text-xs font-semibold leading-tight ${
@@ -174,7 +171,21 @@ export default function StepperForm() {
       </div>
 
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-full overflow-hidden p-5 sm:p-6 min-h-[460px] flex flex-col justify-between space-y-6">
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (step === 5) {
+              handleSubmit(onSubmit)(e);
+            }
+          }}
+          onKeyDown={(e) => {
+            // Mencegah submit otomatis dengan tombol Enter di seluruh langkah form
+            if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
+              e.preventDefault();
+            }
+          }}
+          className="w-full max-w-full overflow-hidden p-5 sm:p-6 min-h-[460px] flex flex-col justify-between space-y-6"
+        >
           
           {/* STEP 1: LANDING & PROSEDUR */}
           {step === 1 && (
@@ -213,7 +224,7 @@ export default function StepperForm() {
                   </div>
                 </label>
                 {errors.setujuKetentuan && (
-                  <p className="text-[11px] text-red-500 font-semibold mt-1.5">{errors.setujuKetentuan.message as string}</p>
+                  <p className="text-[11px] text-red-500 font-semibold mt-1.5">{errors.setujuKetentuan.message}</p>
                 )}
               </div>
             </div>
@@ -222,57 +233,77 @@ export default function StepperForm() {
           {/* STEP 2: DATA DIRI */}
           {step === 2 && (
             <div className="space-y-4 animate-in fade-in duration-300 min-h-[320px] w-full max-w-full overflow-hidden">
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs leading-relaxed text-slate-500">
-                Data di bawah ini diisi otomatis berdasarkan akun login Google Anda. Silakan lengkapi Alamat Lengkap yang aktif saat ini.
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs leading-relaxed text-slate-600">
+                Silakan periksa dan lengkapi Data Diri Anda secara manual di bawah ini.
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    Nama Mahasiswa
+                    Nama Mahasiswa <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
-                    disabled
+                    placeholder="Masukkan nama lengkap"
                     {...register("namaMahasiswa")}
-                    className="w-full text-xs rounded border border-slate-200 bg-slate-100/60 p-2.5 text-slate-500 font-medium cursor-not-allowed"
+                    className={`w-full text-xs rounded border p-2.5 focus:outline-none focus:ring-1 focus:ring-primary-madani ${
+                      errors.namaMahasiswa ? "border-red-400 bg-red-50/20" : "border-slate-300"
+                    }`}
                   />
+                  {errors.namaMahasiswa && (
+                    <p className="text-[11px] text-red-500 font-semibold">{errors.namaMahasiswa.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    NIM
+                    NIM <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
-                    disabled
+                    placeholder="Contoh: 120224001"
                     {...register("nim")}
-                    className="w-full text-xs rounded border border-slate-200 bg-slate-100/60 p-2.5 text-slate-500 font-mono cursor-not-allowed"
+                    className={`w-full text-xs rounded border p-2.5 font-mono focus:outline-none focus:ring-1 focus:ring-primary-madani ${
+                      errors.nim ? "border-red-400 bg-red-50/20" : "border-slate-300"
+                    }`}
                   />
+                  {errors.nim && (
+                    <p className="text-[11px] text-red-500 font-semibold">{errors.nim.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    Program Studi
+                    Program Studi <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
-                    disabled
+                    placeholder="Contoh: Teknik Informatika"
                     {...register("prodi")}
-                    className="w-full text-xs rounded border border-slate-200 bg-slate-100/60 p-2.5 text-slate-500 font-medium cursor-not-allowed"
+                    className={`w-full text-xs rounded border p-2.5 focus:outline-none focus:ring-1 focus:ring-primary-madani ${
+                      errors.prodi ? "border-red-400 bg-red-50/20" : "border-slate-300"
+                    }`}
                   />
+                  {errors.prodi && (
+                    <p className="text-[11px] text-red-500 font-semibold">{errors.prodi.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                    Semester / Tahun Ajaran
+                    Semester / Tahun Ajaran <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
-                    disabled
+                    placeholder="Contoh: Semester Ganjil 2025/2026"
                     {...register("semester")}
-                    className="w-full text-xs rounded border border-slate-200 bg-slate-100/60 p-2.5 text-slate-500 font-medium cursor-not-allowed"
+                    className={`w-full text-xs rounded border p-2.5 focus:outline-none focus:ring-1 focus:ring-primary-madani ${
+                      errors.semester ? "border-red-400 bg-red-50/20" : "border-slate-300"
+                    }`}
                   />
+                  {errors.semester && (
+                    <p className="text-[11px] text-red-500 font-semibold">{errors.semester.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -289,7 +320,7 @@ export default function StepperForm() {
                   }`}
                 />
                 {errors.alamat && (
-                  <p className="text-[11px] text-red-500 font-semibold">{errors.alamat.message as string}</p>
+                  <p className="text-[11px] text-red-500 font-semibold">{errors.alamat.message}</p>
                 )}
               </div>
             </div>
@@ -318,7 +349,7 @@ export default function StepperForm() {
                   }`}
                 />
                 {errors.alasan && (
-                  <p className="text-[11px] text-red-500 font-semibold">{errors.alasan.message as string}</p>
+                  <p className="text-[11px] text-red-500 font-semibold">{errors.alasan.message}</p>
                 )}
               </div>
 
@@ -335,7 +366,7 @@ export default function StepperForm() {
                   </div>
                 </label>
                 {errors.diketahuiPA && (
-                  <p className="text-[11px] text-red-500 font-semibold mt-1.5">{errors.diketahuiPA.message as string}</p>
+                  <p className="text-[11px] text-red-500 font-semibold mt-1.5">{errors.diketahuiPA.message}</p>
                 )}
               </div>
             </div>
@@ -431,6 +462,20 @@ export default function StepperForm() {
                   </div>
                 </div>
               </div>
+
+              {/* Box Konfirmasi Akhir Manual */}
+              <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-lg flex items-start gap-2.5 shadow-sm">
+                <input
+                  type="checkbox"
+                  id="konfirmasiReviewCheck"
+                  checked={konfirmasiReview}
+                  onChange={(e) => setKonfirmasiReview(e.target.checked)}
+                  className="mt-0.5 rounded border-amber-400 text-primary-madani focus:ring-primary-madani w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="konfirmasiReviewCheck" className="text-xs text-amber-900 font-bold select-none cursor-pointer leading-relaxed">
+                  Saya telah mereview seluruh berkas di atas dan mengonfirmasi bahwa data yang saya isikan sudah benar dan siap dikirimkan. <span className="text-rose-600">*</span>
+                </label>
+              </div>
             </div>
           )}
 
@@ -462,8 +507,8 @@ export default function StepperForm() {
             ) : (
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-5 rounded text-xs transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+                disabled={!konfirmasiReview || isSubmitting}
+                className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-5 rounded text-xs transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 <Send className="w-4 h-4" />
                 {isSubmitting ? <span>Mengirimkan...</span> : <span>Kirim Pengajuan</span>}

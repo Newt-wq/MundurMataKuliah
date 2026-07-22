@@ -1,33 +1,18 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { User, Pengajuan, Role, PengajuanStatus } from "../types";
-import { MOCK_USERS, MOCK_PENGAJUAN_INIT } from "../lib/mock-data";
+import { MOCK_USERS, MOCK_PENGAJUAN_INIT } from "@/lib/mock-data";
 import { useRouter } from "next/navigation";
 
-interface SessionContextType {
-  currentUser: User | null;
-  isLoading: boolean;
-  pengajuans: Pengajuan[];
-  login: (role: Role) => Promise<void>;
-  logout: () => void;
-  createPengajuan: (
-    alamat: string,
-    alasan: string,
-    daftarMatakuliah: Array<{ kode: string; nama: string; sks: number }>
-  ) => Pengajuan;
-  updatePengajuanStatus: (id: string, status: PengajuanStatus, catatan?: string) => void;
-}
+const SessionContext = createContext(undefined);
 
-const SessionContext = createContext<SessionContextType | undefined>(undefined);
-
-export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [pengajuans, setPengajuans] = useState<Pengajuan[]>(MOCK_PENGAJUAN_INIT);
+export function SessionProvider({ children }) {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [pengajuans, setPengajuans] = useState(MOCK_PENGAJUAN_INIT);
   const router = useRouter();
 
-  // Load session from localStorage if exists (just to make refreshes friendly, though in-memory React state is requested, localStorage makes dev much nicer!)
+  // Load session from localStorage if exists
   useEffect(() => {
     const savedUser = localStorage.getItem("mock_session_user");
     if (savedUser) {
@@ -48,12 +33,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Synchronize pengajuans to localStorage for demo persistence
-  const savePengajuans = (newPengajuans: Pengajuan[]) => {
+  const savePengajuans = (newPengajuans) => {
     setPengajuans(newPengajuans);
     localStorage.setItem("mock_pengajuans", JSON.stringify(newPengajuans));
   };
 
-  const login = async (role: Role) => {
+  const login = async (role) => {
     setIsLoading(true);
     // Simulate 1.5 seconds Google OAuth loading
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -76,11 +61,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
-  const createPengajuan = (
-    alamat: string,
-    alasan: string,
-    daftarMatakuliah: Array<{ kode: string; nama: string; sks: number }>
-  ) => {
+  const createPengajuan = (formData) => {
     if (!currentUser || currentUser.role !== "mahasiswa") {
       throw new Error("Hanya mahasiswa yang dapat membuat pengajuan.");
     }
@@ -93,16 +74,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
     const newId = `REQ-${yyyy}-${String(pengajuans.length + 1).padStart(3, "0")}`;
 
-    const newPengajuan: Pengajuan = {
+    const newPengajuan = {
       id: newId,
-      nim: currentUser.nim,
-      namaMahasiswa: currentUser.name,
-      prodi: currentUser.prodi,
-      semester: currentUser.semester,
-      alamat,
-      alasan,
+      nim: formData.nim || currentUser.nim,
+      namaMahasiswa: formData.namaMahasiswa || currentUser.name,
+      prodi: formData.prodi || currentUser.prodi,
+      semester: formData.semester || currentUser.semester,
+      alamat: formData.alamat || "",
+      alasan: formData.alasan || "",
       tanggalPengajuan: formattedDate,
-      daftarMatakuliah,
+      daftarMatakuliah: formData.daftarMatakuliah || [],
       status: "MENUNGGU",
       updatedAt: today.toISOString()
     };
@@ -112,13 +93,27 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     return newPengajuan;
   };
 
-  const updatePengajuanStatus = (id: string, status: PengajuanStatus, catatan?: string) => {
+  const updatePengajuanStatus = (id, status, catatan) => {
     const updated = pengajuans.map((item) => {
       if (item.id === id) {
         return {
           ...item,
           status,
           catatanAdmin: catatan || item.catatanAdmin,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return item;
+    });
+    savePengajuans(updated);
+  };
+
+  const cancelPengajuan = (id) => {
+    const updated = pengajuans.map((item) => {
+      if (item.id === id && item.status === "MENUNGGU") {
+        return {
+          ...item,
+          status: "DIBATALKAN",
           updatedAt: new Date().toISOString()
         };
       }
@@ -136,7 +131,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         createPengajuan,
-        updatePengajuanStatus
+        updatePengajuanStatus,
+        cancelPengajuan
       }}
     >
       {children}

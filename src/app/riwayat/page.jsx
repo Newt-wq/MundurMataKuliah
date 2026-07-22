@@ -38,7 +38,7 @@ export default function RiwayatPage() {
 
   // Apply filters
   const filteredSubmissions = studentSubmissions.filter((p) => {
-    const matchesSearch = p.daftarMatakuliah.some((mk) =>
+    const matchesSearch = p.daftarMatakuliah?.some((mk) =>
       mk.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
       mk.kode.toLowerCase().includes(searchQuery.toLowerCase())
     );

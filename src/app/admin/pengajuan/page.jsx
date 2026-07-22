@@ -24,12 +24,10 @@ export default function AdminPengajuanListPage() {
   useEffect(() => {
     if (!isLoading && !currentUser) {
       router.push("/login");
-    } else if (!isLoading && currentUser && currentUser.role === "mahasiswa") {
-      router.push("/");
     }
   }, [currentUser, isLoading, router]);
 
-  if (isLoading || !currentUser || currentUser.role !== "admin") {
+  if (isLoading || !currentUser) {
     return (
       <div className="flex-1 flex justify-center items-center py-24">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-madani" />
@@ -183,7 +181,7 @@ export default function AdminPengajuanListPage() {
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
                 {sorted.map((item, index) => {
-                  const totalSks = item.daftarMatakuliah.reduce((acc, curr) => acc + curr.sks, 0);
+                  const totalSks = item.daftarMatakuliah?.reduce((acc, curr) => acc + (Number(curr?.sks) || 0), 0) || 0;
                   return (
                     <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                       {/* No */}

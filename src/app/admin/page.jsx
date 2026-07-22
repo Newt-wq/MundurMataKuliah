@@ -16,12 +16,10 @@ export default function AdminDashboard() {
     setIsClient(true);
     if (!isLoading && !currentUser) {
       router.push("/login");
-    } else if (!isLoading && currentUser && currentUser.role === "mahasiswa") {
-      router.push("/");
     }
   }, [currentUser, isLoading, router]);
 
-  if (isLoading || !currentUser || !isClient || currentUser.role !== "admin") {
+  if (isLoading || !currentUser || !isClient) {
     return (
       <div className="flex-1 flex justify-center items-center py-24">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-madani" />

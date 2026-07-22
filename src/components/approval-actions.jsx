@@ -1,16 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Pengajuan } from "../types";
 import { useSession } from "@/context/SessionContext";
 import { Check, X, AlertCircle } from "lucide-react";
 
-interface ApprovalActionsProps {
-  pengajuan: Pengajuan;
-  onSuccess?: () => void;
-}
-
-export default function ApprovalActions({ pengajuan, onSuccess }: ApprovalActionsProps) {
+export default function ApprovalActions({ pengajuan, onSuccess }) {
   const { updatePengajuanStatus } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -28,7 +22,7 @@ export default function ApprovalActions({ pengajuan, onSuccess }: ApprovalAction
     }
   };
 
-  const handleRejectSubmit = async (e: React.FormEvent) => {
+  const handleRejectSubmit = async (e) => {
     e.preventDefault();
     if (!rejectReason.trim()) {
       setErrorText("Alasan penolakan wajib diisi.");

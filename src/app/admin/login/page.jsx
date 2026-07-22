@@ -74,7 +74,7 @@ export default function AdminLoginPage() {
             className="object-contain max-h-10 w-auto opacity-70"
             priority
             onError={(e) => {
-              (e.target as HTMLElement).style.display = "none";
+              e.target.style.display = "none";
             }}
           />
         </div>

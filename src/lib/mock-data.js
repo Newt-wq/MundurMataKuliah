@@ -1,6 +1,4 @@
-import { User, Pengajuan } from "../types";
-
-export const MOCK_USERS: { mahasiswa: User; admin: User } = {
+export const MOCK_USERS = {
   mahasiswa: {
     id: "mhs_1",
     name: "Budi Santoso",
@@ -23,7 +21,7 @@ export const MOCK_USERS: { mahasiswa: User; admin: User } = {
   }
 };
 
-export const MOCK_PENGAJUAN_INIT: Pengajuan[] = [
+export const MOCK_PENGAJUAN_INIT = [
   {
     id: "REQ-2025-001",
     nim: "1212022001",
@@ -65,7 +63,7 @@ export const MOCK_PENGAJUAN_INIT: Pengajuan[] = [
     semester: "Ganjil 2025/2026",
     alamat: "Jl. Mampang Prapatan No. 45, Pancoran, Jakarta Selatan 12790",
     alasan: "Mengalami sakit berkepanjangan dan harus menjalani rawat jalan selama semester ini.",
-    tanggalPengajuan: "17/07/2026", // Today's date relative to simulated time
+    tanggalPengajuan: "17/07/2026",
     daftarMatakuliah: [
       { kode: "INF-201", nama: "Pemrograman Asinkron Node.js", sks: 3 }
     ],
