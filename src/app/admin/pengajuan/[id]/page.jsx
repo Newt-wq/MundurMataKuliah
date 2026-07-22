@@ -39,7 +39,7 @@ export default function AdminReviewDetailPage() {
   }
 
   // Find the requested submission
-  const pengajuan = pengajuans.find((p) => p.id === id);
+  const pengajuan = pengajuans.find((p) => p.id === id || p.idPublik === id || p._id === id);
 
   if (!pengajuan) {
     return (
@@ -79,9 +79,10 @@ export default function AdminReviewDetailPage() {
       }
 
       const element = document.getElementById("printable-form");
+      const reqIdForPdf = pengajuan.idPublik || pengajuan._id;
       const opt = {
         margin: [5, 5, 5, 5],
-        filename: `Formulir-Mundur-Matakuliah-${pengajuan.id}.pdf`,
+        filename: `Formulir-Mundur-Matakuliah-${reqIdForPdf}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: {
           scale: 2,
@@ -250,6 +251,10 @@ export default function AdminReviewDetailPage() {
           <div className="flex items-center gap-2">
             <span style={{ color: "#334155" }} className="w-40 font-normal">Nama Mahasiswa</span>
             <span style={{ color: "#000000" }} className="font-bold">: {pengajuan.namaMahasiswa}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span style={{ color: "#334155" }} className="w-40 font-normal">Email Mahasiswa</span>
+            <span style={{ color: "#000000" }} className="font-medium">: {pengajuan.email || (typeof pengajuan.userId === "object" ? pengajuan.userId?.email : "")}</span>
           </div>
           <div className="flex items-center gap-2">
             <span style={{ color: "#334155" }} className="w-40 font-normal">NIM</span>

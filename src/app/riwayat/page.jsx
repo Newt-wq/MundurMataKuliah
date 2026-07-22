@@ -33,12 +33,13 @@ export default function RiwayatPage() {
     );
   }
 
-  // Filter student submissions
-  const studentSubmissions = pengajuans.filter((p) => p.nim === currentUser.nim);
+  // Backend sudah memfilter berdasarkan userId user yang login,
+  // jadi tidak perlu filter ulang by NIM di frontend
+  const studentSubmissions = pengajuans;
 
   // Apply filters
   const filteredSubmissions = studentSubmissions.filter((p) => {
-    const matchesSearch = p.daftarMatakuliah?.some((mk) =>
+    const matchesSearch = !searchQuery || p.daftarMatakuliah?.some((mk) =>
       mk.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
       mk.kode.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -145,7 +146,7 @@ export default function RiwayatPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredSubmissions.map((sub) => (
-            <PengajuanCard key={sub.id} pengajuan={sub} />
+            <PengajuanCard key={sub.idPublik || sub._id} pengajuan={sub} />
           ))}
         </div>
       )}

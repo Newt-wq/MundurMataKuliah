@@ -38,8 +38,8 @@ export default function StudentDashboard() {
     );
   }
 
-  // Filter pengajuans belonging to the current student
-  const studentSubmissions = pengajuans.filter((p) => p.nim === currentUser.nim);
+  // Backend sudah memfilter berdasarkan userId user yang login
+  const studentSubmissions = pengajuans;
   // ONLY show pending/active submissions on Dashboard to avoid clutter!
   const pendingSubmissions = studentSubmissions.filter((p) => p.status === "MENUNGGU");
   const approvedSubmissions = studentSubmissions.filter((p) => p.status === "DISETUJUI");
@@ -189,7 +189,7 @@ export default function StudentDashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {pendingSubmissions.map((sub) => (
-              <PengajuanCard key={sub.id} pengajuan={sub} />
+              <PengajuanCard key={sub.idPublik || sub._id} pengajuan={sub} />
             ))}
           </div>
         )}

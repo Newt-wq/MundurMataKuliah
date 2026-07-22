@@ -1,0 +1,61 @@
+services:
+  # 1. Database MongoDB
+  mongodb:
+    image: mongo:latest
+    container_name: mundur_matkul_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app_network
+
+  # 2. Backend Express API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mundur_matkul_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      # MONGODB_URI diambil dari env_file (backend/.env) - MongoDB Atlas
+      # Hapus baris MONGODB_URI di sini agar tidak menimpa nilai dari .env
+      - CLIENT_URL=http://localhost:3000
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      - mongodb
+    networks:
+      - app_network
+
+  # 3. Frontend Next.js
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - DOCKER_BUILD=true
+    container_name: mundur_matkul_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+      - DOCKER_BUILD=true
+    depends_on:
+      - backend
+    networks:
+      - app_network
+
+volumes:
+  mongo_data:
+
+networks:
+  app_network:
+    driver: bridge

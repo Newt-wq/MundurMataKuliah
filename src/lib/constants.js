@@ -8,6 +8,16 @@ export const PROSEDUR_MUNDUR = [
 ];
 
 export const EMAIL_UPPS = "fir@paramadina.ac.id";
+export const WA_HOTLINE_NUMBER = "628159181193"; // Nomor WhatsApp Official UPPS FIR Paramadina
+export const WA_HOTLINE_DISPLAY = "+62 815-9181-193";
+
+/**
+ * Generate URL WhatsApp me dengan pesan otomatis
+ */
+export const createWaHotlineUrl = (customMessage = "") => {
+  const defaultText = customMessage || "Halo Admin UPPS FIR Universitas Paramadina, saya ingin berkonsultasi mengenai pengunduran mata kuliah.";
+  return `https://wa.me/${WA_HOTLINE_NUMBER}?text=${encodeURIComponent(defaultText)}`;
+};
 
 export const PROGRAM_STUDI = [
   "Informatika",

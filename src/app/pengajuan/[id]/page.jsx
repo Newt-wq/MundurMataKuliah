@@ -36,7 +36,7 @@ export default function DetailPengajuanPage() {
     );
   }
 
-  const pengajuan = pengajuans.find((p) => p.id === id);
+  const pengajuan = pengajuans.find((p) => p.id === id || p.idPublik === id || p._id === id);
 
   if (!pengajuan) {
     return (
@@ -56,8 +56,15 @@ export default function DetailPengajuanPage() {
     );
   }
 
-  // Redirect if student attempts to read another student's submission
-  if (currentUser.role === "mahasiswa" && pengajuan.nim !== currentUser.nim) {
+  // Verifikasi hak akses: hanya pemilik pengajuan (berdasarkan userId/nim) atau admin yang dapat melihat
+  const ownerId = typeof pengajuan.userId === "object" ? pengajuan.userId?._id : pengajuan.userId;
+  const isOwner =
+    !ownerId ||
+    String(ownerId) === String(currentUser.id) ||
+    String(ownerId) === String(currentUser._id) ||
+    (currentUser.nim && pengajuan.nim === currentUser.nim);
+
+  if (currentUser.role === "mahasiswa" && !isOwner) {
     return (
       <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-5 text-center my-12 space-y-3 max-w-md mx-auto">
         <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
@@ -95,9 +102,10 @@ export default function DetailPengajuanPage() {
       }
 
       const element = document.getElementById("printable-form");
+      const reqId = pengajuan.idPublik || pengajuan._id;
       const opt = {
         margin: [5, 5, 5, 5],
-        filename: `Formulir-Mundur-Matakuliah-${pengajuan.id}.pdf`,
+        filename: `Formulir-Mundur-Matakuliah-${reqId}.pdf`,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: {
           scale: 2,
@@ -264,6 +272,10 @@ export default function DetailPengajuanPage() {
           <div className="flex items-center gap-2">
             <span style={{ color: "#334155" }} className="w-40 font-normal">Nama Mahasiswa</span>
             <span style={{ color: "#000000" }} className="font-bold">: {pengajuan.namaMahasiswa}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span style={{ color: "#334155" }} className="w-40 font-normal">Email Mahasiswa</span>
+            <span style={{ color: "#000000" }} className="font-medium">: {pengajuan.email || (typeof pengajuan.userId === "object" ? pengajuan.userId?.email : "") || currentUser?.email}</span>
           </div>
           <div className="flex items-center gap-2">
             <span style={{ color: "#334155" }} className="w-40 font-normal">NIM</span>

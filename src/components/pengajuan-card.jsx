@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BookOpen, ArrowRight, Eye } from "lucide-react";
 
 export default function PengajuanCard({ pengajuan }) {
+  const reqId = pengajuan.idPublik || pengajuan.id || pengajuan._id;
   const totalSks = pengajuan.daftarMatakuliah?.reduce((acc, curr) => acc + (Number(curr?.sks) || 0), 0) || 0;
   const courseCount = pengajuan.daftarMatakuliah?.length || 0;
   
@@ -22,7 +23,7 @@ export default function PengajuanCard({ pengajuan }) {
         <div className="flex justify-between items-start gap-2">
           <div>
             <span className="text-[11px] font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-              #{pengajuan.id}
+              #{reqId}
             </span>
             <span className="text-[11px] text-slate-400 block mt-1">
               Tanggal: {pengajuan.tanggalPengajuan}
@@ -59,14 +60,14 @@ export default function PengajuanCard({ pengajuan }) {
 
       <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex gap-2">
         <Link
-          href={`/pengajuan/${pengajuan.id}`}
+          href={`/pengajuan/${reqId}`}
           className="flex-1 inline-flex items-center justify-center gap-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold py-1.5 px-3 rounded-lg text-xs transition-colors cursor-pointer"
         >
           <Eye className="w-3.5 h-3.5" />
           <span>Lihat Form</span>
         </Link>
         <Link
-          href={`/pengajuan/${pengajuan.id}/status`}
+          href={`/pengajuan/${reqId}/status`}
           className="flex-1 inline-flex items-center justify-center gap-1 bg-primary-madani hover:bg-primary-madani-dark text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-colors cursor-pointer shadow-xs"
         >
           <span>Lacak Status</span>

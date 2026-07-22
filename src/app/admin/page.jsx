@@ -132,30 +132,33 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <div className="bg-white border border-slate-200 rounded-lg shadow-sm divide-y divide-slate-100 overflow-hidden">
-              {recentPending.map((item) => (
-                <div key={item.id} className="p-4 hover:bg-slate-50/50 flex items-center justify-between gap-4 transition-colors">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-slate-800">{item.id}</span>
-                      <span className="text-[10px] text-slate-400 font-semibold">{item.tanggalPengajuan}</span>
+              {recentPending.map((item) => {
+                const reqId = item.idPublik || item._id;
+                return (
+                  <div key={reqId} className="p-4 hover:bg-slate-50/50 flex items-center justify-between gap-4 transition-colors">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-slate-800">{reqId}</span>
+                        <span className="text-[10px] text-slate-400 font-semibold">{item.tanggalPengajuan}</span>
+                      </div>
+                      <p className="text-xs font-semibold text-slate-700">
+                        {item.namaMahasiswa} ({item.nim}) - {item.prodi}
+                      </p>
+                      <p className="text-[11px] text-slate-500 line-clamp-1">
+                        Mata kuliah: {item.daftarMatakuliah.map(c => `${c.nama} (${c.sks} SKS)`).join(", ")}
+                      </p>
                     </div>
-                    <p className="text-xs font-semibold text-slate-700">
-                      {item.namaMahasiswa} ({item.nim}) - {item.prodi}
-                    </p>
-                    <p className="text-[11px] text-slate-500 line-clamp-1">
-                      Mata kuliah: {item.daftarMatakuliah.map(c => `${c.nama} (${c.sks} SKS)`).join(", ")}
-                    </p>
+                    
+                    <Link
+                      href={`/admin/pengajuan/${reqId}`}
+                      className="inline-flex items-center gap-1 bg-primary-madani hover:bg-primary-madani-dark text-white font-semibold py-1.5 px-3 rounded text-[11px] transition-colors cursor-pointer shrink-0 shadow-sm"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Tinjau</span>
+                    </Link>
                   </div>
-                  
-                  <Link
-                    href={`/admin/pengajuan/${item.id}`}
-                    className="inline-flex items-center gap-1 bg-primary-madani hover:bg-primary-madani-dark text-white font-semibold py-1.5 px-3 rounded text-[11px] transition-colors cursor-pointer shrink-0 shadow-sm"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Tinjau</span>
-                  </Link>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

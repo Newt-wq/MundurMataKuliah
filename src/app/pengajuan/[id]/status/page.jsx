@@ -4,13 +4,15 @@ import React, { useEffect, useState } from "react";
 import { useSession } from "@/context/SessionContext";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Clock, CheckCircle2, AlertTriangle, HelpCircle, Ban, FileText } from "lucide-react";
+import { createWaHotlineUrl, WA_HOTLINE_DISPLAY } from "@/lib/constants";
+import { ArrowLeft, Clock, CheckCircle2, AlertTriangle, HelpCircle, Ban, FileText, MessageSquare } from "lucide-react";
 
 export default function TrackingStatusPage() {
   const { id } = useParams();
-  const { currentUser, pengajuans, cancelPengajuan, isLoading } = useSession();
+  const { currentUser, pengajuans, cancelPengajuan, fetchPengajuans, isLoading } = useSession();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -27,7 +29,7 @@ export default function TrackingStatusPage() {
     );
   }
 
-  const pengajuan = pengajuans.find((p) => p.id === id);
+  const pengajuan = pengajuans.find((p) => p.id === id || p.idPublik === id || p._id === id);
 
   if (!pengajuan) {
     return (
@@ -38,8 +40,15 @@ export default function TrackingStatusPage() {
     );
   }
 
-  // Redirect if student attempts to read another student's submission
-  if (currentUser.role === "mahasiswa" && pengajuan.nim !== currentUser.nim) {
+  // Verifikasi hak akses: hanya pemilik pengajuan (berdasarkan userId/nim) atau admin yang dapat melihat
+  const ownerId = typeof pengajuan.userId === "object" ? pengajuan.userId?._id : pengajuan.userId;
+  const isOwner =
+    !ownerId ||
+    String(ownerId) === String(currentUser.id) ||
+    String(ownerId) === String(currentUser._id) ||
+    (currentUser.nim && pengajuan.nim === currentUser.nim);
+
+  if (currentUser.role === "mahasiswa" && !isOwner) {
     return (
       <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-5 text-center my-12 max-w-md mx-auto">
         <h4 className="font-bold">Akses Ditolak</h4>
@@ -48,14 +57,23 @@ export default function TrackingStatusPage() {
     );
   }
 
+  const reqId = pengajuan.idPublik || pengajuan.id || pengajuan._id;
   const isPending = pengajuan.status === "MENUNGGU";
   const isApproved = pengajuan.status === "DISETUJUI";
   const isRejected = pengajuan.status === "DITOLAK";
   const isCanceled = pengajuan.status === "DIBATALKAN";
 
-  const handleCancel = () => {
-    if (confirm(`Apakah Anda yakin ingin membatalkan pengajuan #${pengajuan.id}?`)) {
-      cancelPengajuan(pengajuan.id);
+  const handleCancel = async () => {
+    if (!confirm(`Apakah Anda yakin ingin membatalkan pengajuan #${reqId}? Tindakan ini tidak dapat dibatalkan.`)) return;
+    setIsCanceling(true);
+    try {
+      await cancelPengajuan(reqId);
+      await fetchPengajuans(); // refresh data
+      alert(`Pengajuan #${reqId} berhasil dibatalkan.`);
+    } catch (error) {
+      alert(`Gagal membatalkan: ${error.message}`);
+    } finally {
+      setIsCanceling(false);
     }
   };
 
@@ -74,7 +92,7 @@ export default function TrackingStatusPage() {
           </Link>
           <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
             <span>Lacak Status Pengajuan</span>
-            <span className="font-mono text-slate-400 text-sm font-normal">#{pengajuan.id}</span>
+            <span className="font-mono text-slate-400 text-sm font-normal">#{reqId}</span>
           </h1>
           <p className="text-xs text-slate-500">
             Pantau progres review berkas administrasi mundur mata kuliah Anda oleh UPPS.
@@ -84,7 +102,7 @@ export default function TrackingStatusPage() {
         {/* Clean Header Action */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Link
-            href={`/pengajuan/${pengajuan.id}`}
+            href={`/pengajuan/${reqId}`}
             className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-semibold py-2 px-3.5 rounded-xl text-xs transition-colors cursor-pointer shadow-xs"
           >
             <FileText className="w-4 h-4 text-primary-madani" />
@@ -214,9 +232,10 @@ export default function TrackingStatusPage() {
           </div>
           <button
             onClick={handleCancel}
-            className="w-full sm:w-auto shrink-0 bg-white hover:bg-rose-50 border border-slate-300 hover:border-rose-300 text-slate-700 hover:text-rose-700 font-semibold text-xs py-2 px-4 rounded-xl transition-all cursor-pointer shadow-2xs"
+            disabled={isCanceling}
+            className="w-full sm:w-auto shrink-0 bg-white hover:bg-rose-50 border border-slate-300 hover:border-rose-300 text-slate-700 hover:text-rose-700 font-semibold text-xs py-2 px-4 rounded-xl transition-all cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Batalkan Pengajuan
+            {isCanceling ? "Membatalkan..." : "Batalkan Pengajuan"}
           </button>
         </div>
       )}
@@ -233,7 +252,7 @@ export default function TrackingStatusPage() {
           )}
           {isApproved && (
             <>
-              <li>Unduh berkas PDF formulir Anda dengan mengeklik tombol <Link href={`/pengajuan/${pengajuan.id}`} className="text-primary-madani font-semibold underline">Lihat Form</Link>.</li>
+              <li>Unduh berkas PDF formulir Anda dengan mengeklik tombol <Link href={`/pengajuan/${reqId}`} className="text-primary-madani font-semibold underline">Lihat Form</Link>.</li>
               <li>Periksa portal akademik (KRS online) Anda secara berkala untuk memastikan mata kuliah tersebut telah dinonaktifkan.</li>
             </>
           )}
@@ -243,7 +262,18 @@ export default function TrackingStatusPage() {
               <li>Jika ada kesalahan input, Anda dapat berkoordinasi dengan Dosen PA atau mengajukan formulir baru jika masih berada dalam tenggat waktu pertemuan ke-2.</li>
             </>
           )}
-          <li>Untuk pertanyaan mendesak, silakan hubungi <a href="mailto:fir@paramadina.ac.id" className="text-primary-madani font-semibold underline">fir@paramadina.ac.id</a>.</li>
+          <li>
+            Untuk pertanyaan mendesak, silakan hubungi <a href="mailto:fir@paramadina.ac.id" className="text-primary-madani font-semibold underline">fir@paramadina.ac.id</a> atau via{" "}
+            <a
+              href={createWaHotlineUrl(`Halo Admin UPPS FIR, saya ingin menanyakan pengajuan #${reqId}`)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 transition-colors"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>WhatsApp Hotline UPPS ({WA_HOTLINE_DISPLAY})</span>
+            </a>
+          </li>
         </ul>
       </div>
 

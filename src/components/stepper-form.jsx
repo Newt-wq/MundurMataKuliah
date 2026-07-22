@@ -38,6 +38,7 @@ export default function StepperForm() {
     ),
     defaultValues: {
       namaMahasiswa: currentUser?.name || "",
+      email: currentUser?.email || "",
       nim: currentUser?.nim || "",
       prodi: currentUser?.prodi || "",
       semester: currentUser?.semester || "",
@@ -66,7 +67,7 @@ export default function StepperForm() {
     if (step === 1) {
       fieldsToValidate = ["setujuKetentuan"];
     } else if (step === 2) {
-      fieldsToValidate = ["namaMahasiswa", "nim", "prodi", "semester", "alamat"];
+      fieldsToValidate = ["namaMahasiswa", "email", "nim", "prodi", "semester", "alamat"];
     } else if (step === 3) {
       fieldsToValidate = ["daftarMatakuliah"];
     } else if (step === 4) {
@@ -87,17 +88,19 @@ export default function StepperForm() {
     if (step !== 5) return;
 
     setIsSubmitting(true);
-    // Simulate API request delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
     
     try {
-      const newRequest = createPengajuan(data);
+      const newRequest = await createPengajuan(data);
       setIsSubmitting(false);
-      // Redirect to status tracking page
-      router.push(`/pengajuan/${newRequest.id}/status`);
+      const reqId = newRequest?.idPublik || newRequest?.id || newRequest?._id;
+      if (reqId) {
+        router.push(`/pengajuan/${reqId}/status`);
+      } else {
+        router.push("/");
+      }
     } catch (e) {
       setIsSubmitting(false);
-      alert("Gagal mengirimkan pengajuan. Silakan coba lagi.");
+      alert(e?.message || "Gagal mengirimkan pengajuan. Silakan coba lagi.");
     }
   };
 
@@ -257,6 +260,23 @@ export default function StepperForm() {
 
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
+                    Email Mahasiswa <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="contoh@students.paramadina.ac.id"
+                    {...register("email")}
+                    className={`w-full text-xs rounded border p-2.5 focus:outline-none focus:ring-1 focus:ring-primary-madani ${
+                      errors.email ? "border-red-400 bg-red-50/20" : "border-slate-300"
+                    }`}
+                  />
+                  {errors.email && (
+                    <p className="text-[11px] text-red-500 font-semibold">{errors.email.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
                     NIM <span className="text-rose-500">*</span>
                   </label>
                   <input
@@ -389,6 +409,10 @@ export default function StepperForm() {
                   <div className="flex justify-between md:justify-start gap-2">
                     <span className="text-slate-500 w-32 shrink-0">Nama Lengkap:</span>
                     <span className="font-semibold text-slate-800">{values.namaMahasiswa}</span>
+                  </div>
+                  <div className="flex justify-between md:justify-start gap-2">
+                    <span className="text-slate-500 w-32 shrink-0">Email Mahasiswa:</span>
+                    <span className="font-semibold text-slate-800">{values.email || currentUser?.email}</span>
                   </div>
                   <div className="flex justify-between md:justify-start gap-2">
                     <span className="text-slate-500 w-32 shrink-0">NIM Mahasiswa:</span>

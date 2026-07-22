@@ -8,7 +8,7 @@ import { Loader2, Info, CheckCircle2, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const { currentUser, login, isLoading } = useSession();
+  const { currentUser, login, devLogin, isLoading } = useSession();
   const router = useRouter();
 
   // If already logged in, redirect away
@@ -26,10 +26,18 @@ export default function LoginPage() {
     login("mahasiswa");
   };
 
+  const handleDevLogin = async (role) => {
+    try {
+      await devLogin(role);
+    } catch (err) {
+      alert("Gagal Dev Login: " + err.message);
+    }
+  };
+
   return (
     <div className="flex-1 flex justify-center items-center py-10 px-4 sm:px-6 bg-white min-h-[calc(100vh-80px)]">
       <div className="max-w-4xl w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 grid grid-cols-1 md:grid-cols-2 min-h-[500px]">
-        
+
         {/* Left Column: Campus Building Banner */}
         <div className="relative hidden md:flex flex-col justify-end p-8 text-white overflow-hidden bg-slate-900">
           <Image
@@ -40,7 +48,7 @@ export default function LoginPage() {
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
-          
+
           <div className="relative z-10 space-y-1.5">
             <span className="text-emerald-400 font-extrabold text-[11px] uppercase tracking-widest block">
               SELAMAT DATANG
@@ -56,7 +64,7 @@ export default function LoginPage() {
 
         {/* Right Column: Clean Layout + Info & Syarat Mundur Mata Kuliah */}
         <div className="p-7 sm:p-10 flex flex-col justify-between space-y-5 bg-white my-auto">
-          
+
           {/* Header Logo & Subtitle */}
           <div className="space-y-3.5 text-center">
             <div className="flex justify-center">
@@ -66,7 +74,7 @@ export default function LoginPage() {
                 className="object-contain max-h-14 w-auto"
               />
             </div>
-            
+
             <p className="text-slate-400 text-xs sm:text-sm font-medium leading-relaxed max-w-xs mx-auto">
               Silakan masuk untuk melanjutkan ke akun Anda.
             </p>
@@ -104,7 +112,7 @@ export default function LoginPage() {
           </div>
 
           {/* Minimal GSuite Google Button matching screenshot */}
-          <div>
+          <div className="space-y-2.5">
             <button
               onClick={handleGoogleLogin}
               disabled={isLoading}
@@ -119,6 +127,29 @@ export default function LoginPage() {
                 {isLoading ? "Menghubungkan..." : "Masuk dengan Google (GSuite Paramadina)"}
               </span>
             </button>
+
+            {/* Quick Demo/Dev Login for local testing & UAS presentation */}
+            <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-center block">
+                Opsi Demo / Testing UAS (Bypass Google OAuth)
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDevLogin("mahasiswa")}
+                  className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition cursor-pointer text-center"
+                >
+                  👨‍🎓 Demo Mahasiswa
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDevLogin("admin")}
+                  className="w-full py-2 px-3 bg-blue-50 hover:bg-blue-100 text-[#005493] font-semibold rounded-xl text-xs transition cursor-pointer text-center"
+                >
+                  👨‍💼 Demo Admin Kaprodi
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Footer branding */}

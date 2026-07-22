@@ -14,11 +14,15 @@ export default function ApprovalActions({ pengajuan, onSuccess }) {
   const handleApprove = async () => {
     if (window.confirm("Apakah Anda yakin ingin menyetujui pengajuan mundur mata kuliah ini?")) {
       setIsSubmitting(true);
-      // Simulate network request delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      updatePengajuanStatus(pengajuan.id, "DISETUJUI", "ACC UPPS. Berkas dan ketentuan memenuhi syarat.");
-      setIsSubmitting(false);
-      if (onSuccess) onSuccess();
+      try {
+        const reqId = pengajuan.idPublik || pengajuan._id;
+        await updatePengajuanStatus(reqId, "DISETUJUI", "ACC UPPS. Berkas dan ketentuan memenuhi syarat.");
+        if (onSuccess) onSuccess();
+      } catch (error) {
+        alert(`Gagal menyetujui: ${error.message}`);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -30,14 +34,18 @@ export default function ApprovalActions({ pengajuan, onSuccess }) {
     }
     
     setIsSubmitting(true);
-    // Simulate network request delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    updatePengajuanStatus(pengajuan.id, "DITOLAK", rejectReason.trim());
-    setIsSubmitting(false);
-    setShowRejectModal(false);
-    setRejectReason("");
-    setErrorText("");
-    if (onSuccess) onSuccess();
+    try {
+      const reqId = pengajuan.idPublik || pengajuan._id;
+      await updatePengajuanStatus(reqId, "DITOLAK", rejectReason.trim());
+      setShowRejectModal(false);
+      setRejectReason("");
+      setErrorText("");
+      if (onSuccess) onSuccess();
+    } catch (error) {
+      setErrorText(`Gagal menolak: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (pengajuan.status !== "MENUNGGU") {

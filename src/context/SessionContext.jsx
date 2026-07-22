@@ -1,125 +1,179 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { MOCK_USERS, MOCK_PENGAJUAN_INIT } from "@/lib/mock-data";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { authApi, pengajuanApi } from "@/lib/apiClient";
 import { useRouter } from "next/navigation";
 
 const SessionContext = createContext(undefined);
 
 export function SessionProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [pengajuans, setPengajuans] = useState(MOCK_PENGAJUAN_INIT);
+  const [isLoading, setIsLoading] = useState(true); // true saat pertama load untuk cek session
+  const [pengajuans, setPengajuans] = useState([]);
+  const [pengajuansLoading, setPengajuansLoading] = useState(false);
   const router = useRouter();
 
-  // Load session from localStorage if exists
+  // =====================================================
+  // CEK SESSION YANG SUDAH ADA (saat app pertama dibuka)
+  // Cookie httpOnly dikirim otomatis, tinggal hit /api/auth/me
+  // =====================================================
   useEffect(() => {
-    const savedUser = localStorage.getItem("mock_session_user");
-    if (savedUser) {
+    const checkSession = async () => {
       try {
-        setCurrentUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error("Failed to parse saved session", e);
+        const response = await authApi.getMe();
+        if (response.success) {
+          setCurrentUser(response.data);
+        }
+      } catch (error) {
+        // 401 berarti belum login — ini normal, bukan error sebenarnya
+        setCurrentUser(null);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    const savedPengajuans = localStorage.getItem("mock_pengajuans");
-    if (savedPengajuans) {
-      try {
-        setPengajuans(JSON.parse(savedPengajuans));
-      } catch (e) {
-        console.error("Failed to parse saved applications", e);
-      }
-    }
+    };
+
+    checkSession();
   }, []);
 
-  // Synchronize pengajuans to localStorage for demo persistence
-  const savePengajuans = (newPengajuans) => {
-    setPengajuans(newPengajuans);
-    localStorage.setItem("mock_pengajuans", JSON.stringify(newPengajuans));
+  // =====================================================
+  // FETCH PENGAJUAN (setelah user login)
+  // =====================================================
+  const fetchPengajuans = useCallback(async (params = {}) => {
+    if (!currentUser) return;
+    setPengajuansLoading(true);
+    try {
+      const response = await pengajuanApi.getAll(params);
+      if (response.success) {
+        setPengajuans(response.data);
+      }
+    } catch (error) {
+      console.error("Gagal mengambil data pengajuan:", error.message);
+    } finally {
+      setPengajuansLoading(false);
+    }
+  }, [currentUser]);
+
+  // Auto-fetch pengajuan setiap kali user berubah (login/logout)
+  useEffect(() => {
+    if (currentUser) {
+      fetchPengajuans();
+    } else {
+      setPengajuans([]);
+    }
+  }, [currentUser, fetchPengajuans]);
+
+  // =====================================================
+  // LOGIN – Redirect ke Google OAuth
+  // (window.location.href ke /api/auth/google)
+  // =====================================================
+  const login = () => {
+    setIsLoading(true);
+    authApi.loginWithGoogle();
+    // Halaman akan redirect ke Google, loading state akan reset saat kembali
   };
 
-  const login = async (role) => {
-    setIsLoading(true);
-    // Simulate 1.5 seconds Google OAuth loading
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    const user = role === "mahasiswa" ? MOCK_USERS.mahasiswa : MOCK_USERS.admin;
-    setCurrentUser(user);
-    localStorage.setItem("mock_session_user", JSON.stringify(user));
-    setIsLoading(false);
-
-    if (role === "admin") {
-      router.push("/admin");
-    } else {
-      router.push("/");
+  // =====================================================
+  // LOGOUT
+  // =====================================================
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error("Logout error:", error.message);
+    } finally {
+      setCurrentUser(null);
+      setPengajuans([]);
+      router.push("/login");
     }
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem("mock_session_user");
-    router.push("/login");
+  // =====================================================
+  // SET USER SETELAH OAUTH CALLBACK
+  // Dipanggil dari halaman yang menerima redirect dari backend
+  // =====================================================
+  const fetchAndSetUser = async () => {
+    try {
+      const response = await authApi.getMe();
+      if (response.success) {
+        setCurrentUser(response.data);
+        return response.data;
+      }
+    } catch (error) {
+      console.error("Gagal mengambil data user:", error.message);
+      return null;
+    }
   };
 
-  const createPengajuan = (formData) => {
+  // =====================================================
+  // CREATE PENGAJUAN (Async/Await + Promise)
+  // =====================================================
+  const createPengajuan = async (formData) => {
     if (!currentUser || currentUser.role !== "mahasiswa") {
       throw new Error("Hanya mahasiswa yang dapat membuat pengajuan.");
     }
 
-    const today = new Date();
-    const dd = String(today.getDate()).padStart(2, "0");
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const yyyy = today.getFullYear();
-    const formattedDate = `${dd}/${mm}/${yyyy}`;
-
-    const newId = `REQ-${yyyy}-${String(pengajuans.length + 1).padStart(3, "0")}`;
-
-    const newPengajuan = {
-      id: newId,
-      nim: formData.nim || currentUser.nim,
-      namaMahasiswa: formData.namaMahasiswa || currentUser.name,
-      prodi: formData.prodi || currentUser.prodi,
-      semester: formData.semester || currentUser.semester,
-      alamat: formData.alamat || "",
-      alasan: formData.alasan || "",
-      tanggalPengajuan: formattedDate,
-      daftarMatakuliah: formData.daftarMatakuliah || [],
-      status: "MENUNGGU",
-      updatedAt: today.toISOString()
-    };
-
-    const updated = [newPengajuan, ...pengajuans];
-    savePengajuans(updated);
-    return newPengajuan;
+    const response = await pengajuanApi.create(formData);
+    if (response.success) {
+      // Tambahkan ke state lokal tanpa perlu refetch
+      setPengajuans((prev) => [response.data, ...prev]);
+      return response.data;
+    }
+    throw new Error(response.message || "Gagal membuat pengajuan.");
   };
 
-  const updatePengajuanStatus = (id, status, catatan) => {
-    const updated = pengajuans.map((item) => {
-      if (item.id === id) {
-        return {
-          ...item,
-          status,
-          catatanAdmin: catatan || item.catatanAdmin,
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return item;
-    });
-    savePengajuans(updated);
+  // =====================================================
+  // UPDATE STATUS PENGAJUAN
+  // =====================================================
+  const updatePengajuanStatus = async (id, status, catatan = null) => {
+    const response = await pengajuanApi.updateStatus(id, status, catatan);
+    if (response.success) {
+      // Update state lokal - match by idPublik ATAU _id untuk keamanan
+      setPengajuans((prev) =>
+        prev.map((item) =>
+          item.idPublik === id || String(item._id) === String(id)
+            ? { ...item, ...response.data }
+            : item
+        )
+      );
+      return response.data;
+    }
+    throw new Error(response.message || "Gagal update status.");
   };
 
-  const cancelPengajuan = (id) => {
-    const updated = pengajuans.map((item) => {
-      if (item.id === id && item.status === "MENUNGGU") {
-        return {
-          ...item,
-          status: "DIBATALKAN",
-          updatedAt: new Date().toISOString()
-        };
+  // =====================================================
+  // BATALKAN PENGAJUAN (Mahasiswa)
+  // =====================================================
+  const cancelPengajuan = async (id) => {
+    try {
+      const result = await updatePengajuanStatus(id, "DIBATALKAN");
+      return result;
+    } catch (error) {
+      console.error("Gagal membatalkan pengajuan:", error.message);
+      throw error;
+    }
+  };
+
+  // =====================================================
+  // DEV LOGIN (Testing tanpa Google OAuth)
+  // =====================================================
+  const devLogin = async (role = "mahasiswa") => {
+    setIsLoading(true);
+    try {
+      const response = await authApi.devLogin(role);
+      if (response.success) {
+        setCurrentUser(response.data);
+        if (response.data.role === "admin") {
+          router.push("/admin");
+        } else {
+          router.push("/");
+        }
       }
-      return item;
-    });
-    savePengajuans(updated);
+    } catch (error) {
+      console.error("Dev login error:", error.message);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -128,11 +182,15 @@ export function SessionProvider({ children }) {
         currentUser,
         isLoading,
         pengajuans,
+        pengajuansLoading,
         login,
+        devLogin,
         logout,
         createPengajuan,
         updatePengajuanStatus,
-        cancelPengajuan
+        cancelPengajuan,
+        fetchPengajuans,
+        fetchAndSetUser,
       }}
     >
       {children}

@@ -3,6 +3,7 @@ import "./globals.css";
 import { SessionProvider } from "@/context/SessionContext";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import WhatsappHotline from "@/components/whatsapp-hotline";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({ children }) {
           <main className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {children}
           </main>
+          <WhatsappHotline />
           <Footer />
         </SessionProvider>
       </body>

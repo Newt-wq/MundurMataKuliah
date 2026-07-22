@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useSession } from "@/context/SessionContext";
+import { WA_HOTLINE_DISPLAY, createWaHotlineUrl } from "@/lib/constants";
 
 export default function Footer() {
   const { currentUser } = useSession();
@@ -14,6 +15,15 @@ export default function Footer() {
         <span>
           © {new Date().getFullYear()} Fakultas Ilmu Rekayasa · Universitas Paramadina
         </span>
+        <a
+          href={createWaHotlineUrl()}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-emerald-600 transition-colors flex items-center gap-1"
+        >
+          <span>WA Hotline UPPS FIR:</span>
+          <span className="font-semibold font-mono text-slate-600">{WA_HOTLINE_DISPLAY}</span>
+        </a>
       </div>
     </footer>
   );

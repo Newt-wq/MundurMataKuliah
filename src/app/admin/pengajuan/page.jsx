@@ -37,10 +37,11 @@ export default function AdminPengajuanListPage() {
 
   // Apply filters
   const filtered = pengajuans.filter((p) => {
-    const matchesSearch = 
-      p.namaMahasiswa.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.nim.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const idStr = p.idPublik || p._id?.toString() || "";
+    const matchesSearch = !searchQuery ||
+      (p.namaMahasiswa || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.nim || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      idStr.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = statusFilter === "SEMUA" || p.status === statusFilter;
     const matchesProdi = prodiFilter === "SEMUA" || p.prodi === prodiFilter;
@@ -183,13 +184,13 @@ export default function AdminPengajuanListPage() {
                 {sorted.map((item, index) => {
                   const totalSks = item.daftarMatakuliah?.reduce((acc, curr) => acc + (Number(curr?.sks) || 0), 0) || 0;
                   return (
-                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={item.idPublik || item._id} className="hover:bg-slate-50/50 transition-colors">
                       {/* No */}
                       <td className="px-4 py-3 text-center text-slate-500 font-medium">{index + 1}</td>
                       
                       {/* ID & Date */}
                       <td className="px-4 py-3">
-                        <span className="font-mono font-bold text-slate-800 block">{item.id}</span>
+                        <span className="font-mono font-bold text-slate-800 block">{item.idPublik || item._id}</span>
                         <span className="text-[10px] text-slate-400 font-semibold">{item.tanggalPengajuan}</span>
                       </td>
 
@@ -218,7 +219,7 @@ export default function AdminPengajuanListPage() {
                       {/* Actions */}
                       <td className="px-4 py-3 text-center">
                         <Link
-                          href={`/admin/pengajuan/${item.id}`}
+                          href={`/admin/pengajuan/${item.idPublik || item._id}`}
                           className="inline-flex items-center gap-1.5 bg-primary-madani hover:bg-primary-madani-dark text-white font-semibold py-1.5 px-3 rounded text-[11px] transition-colors cursor-pointer shadow-sm"
                         >
                           <Eye className="w-3.5 h-3.5" />

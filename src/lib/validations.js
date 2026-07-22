@@ -8,6 +8,7 @@ export const step1Schema = z.object({
 
 export const step2Schema = z.object({
   namaMahasiswa: z.string().min(2, "Nama mahasiswa wajib diisi."),
+  email: z.string().email("Format email tidak valid.").optional().or(z.literal("")),
   nim: z.string().min(8, "NIM minimal terdiri dari 8 karakter."),
   prodi: z.string().min(1, "Silakan pilih Program Studi."),
   semester: z.string().min(1, "Silakan pilih Semester/Tahun Ajaran."),
