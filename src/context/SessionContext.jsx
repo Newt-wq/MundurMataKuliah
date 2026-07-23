@@ -153,28 +153,6 @@ export function SessionProvider({ children }) {
     }
   };
 
-  // =====================================================
-  // DEV LOGIN (Testing tanpa Google OAuth)
-  // =====================================================
-  const devLogin = async (role = "mahasiswa") => {
-    setIsLoading(true);
-    try {
-      const response = await authApi.devLogin(role);
-      if (response.success) {
-        setCurrentUser(response.data);
-        if (response.data.role === "admin") {
-          router.push("/admin");
-        } else {
-          router.push("/");
-        }
-      }
-    } catch (error) {
-      console.error("Dev login error:", error.message);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <SessionContext.Provider
@@ -184,7 +162,6 @@ export function SessionProvider({ children }) {
         pengajuans,
         pengajuansLoading,
         login,
-        devLogin,
         logout,
         createPengajuan,
         updatePengajuanStatus,

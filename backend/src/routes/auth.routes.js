@@ -1,7 +1,7 @@
 const express = require("express");
 const passport = require("passport");
 const verifyToken = require("../middleware/auth");
-const { googleCallback, getMe, logout, devLogin } = require("../controllers/auth.controller");
+const { googleCallback, getMe, logout } = require("../controllers/auth.controller");
 
 const router = express.Router();
 
@@ -11,12 +11,7 @@ const router = express.Router();
  * @module auth.routes
  */
 
-/**
- * @route   POST /api/auth/dev-login
- * @desc    Fast-track dev login tanpa Google OAuth (hanya untuk development)
- * @access  Public
- */
-router.post("/dev-login", devLogin);
+
 
 /**
  * @route   GET /api/auth/google

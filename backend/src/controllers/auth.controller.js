@@ -102,53 +102,5 @@ const logout = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    Bypass login untuk testing lokal (hanya saat NODE_ENV=development)
- * @route   POST /api/auth/dev-login
- * @access  Public
- */
-const devLogin = asyncHandler(async (req, res) => {
-  if (process.env.NODE_ENV === "production") {
-    return res.status(403).json({
-      success: false,
-      message: "Dev login tidak tersedia di production mode.",
-    });
-  }
 
-  const role = req.body.role === "admin" ? "admin" : "mahasiswa";
-  const email =
-    role === "admin"
-      ? "admin@paramadina.ac.id"
-      : "raka.hartono@students.paramadina.ac.id";
-  const name = role === "admin" ? "Admin Kaprodi" : "Raka Hartono";
-
-  const User = require("../models/User");
-  let user = await User.findOne({ email });
-
-  if (!user) {
-    user = await User.create({
-      googleId: "dev-mock-id-" + role,
-      name,
-      email,
-      role,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
-    });
-  }
-
-  sendTokenResponse(user, res);
-
-  res.status(200).json({
-    success: true,
-    message: `Dev login berhasil sebagai ${role}`,
-    data: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      avatar: user.avatar,
-    },
-  });
-});
-
-module.exports = { googleLogin, googleCallback, getMe, logout, devLogin };
-
+module.exports = { googleCallback, getMe, logout };

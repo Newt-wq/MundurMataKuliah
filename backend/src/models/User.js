@@ -26,9 +26,8 @@ const userSchema = new mongoose.Schema(
       validate: {
         validator: (v) =>
           v.endsWith("@students.paramadina.ac.id") ||
-          v.endsWith("@paramadina.ac.id") ||
-          v.endsWith("@gmail.com"),
-        message: "Email harus dari domain Universitas Paramadina atau @gmail.com",
+          v.endsWith("@paramadina.ac.id"),
+        message: "Email harus dari domain resmi Universitas Paramadina.",
       },
     },
     role: {

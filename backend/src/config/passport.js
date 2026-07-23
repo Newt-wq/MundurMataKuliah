@@ -38,7 +38,6 @@ const configurePassport = () => {
           const allowedDomains = [
             "@students.paramadina.ac.id",
             "@paramadina.ac.id",
-            "@gmail.com",
           ];
           const isAllowedDomain = allowedDomains.some((domain) =>
             email.endsWith(domain)
@@ -51,26 +50,50 @@ const configurePassport = () => {
             });
           }
 
-          // Tentukan role berdasarkan domain email
-          const role = email.endsWith("@paramadina.ac.id")
-            ? "admin"
-            : "mahasiswa";
+          // =====================================================
+          // DAFTAR EMAIL DENGAN AKSES ADMIN KHUSUS
+          // Email di bawah ini mendapat role admin meski bukan @paramadina.ac.id
+          // (untuk keperluan demo / pengembang)
+          // =====================================================
+          const ADMIN_OVERRIDE_EMAILS = [
+            "raka.hartono@students.paramadina.ac.id",
+          ];
+
+          // Tentukan role berdasarkan domain email atau override list
+          const role =
+            ADMIN_OVERRIDE_EMAILS.includes(email) ||
+            email.endsWith("@paramadina.ac.id")
+              ? "admin"
+              : "mahasiswa";
 
           // Cari user yang sudah ada berdasarkan googleId
           let user = await User.findOne({ googleId: profile.id });
 
           if (!user) {
-            // Jika belum ada, buat user baru (MongoDB async query)
-            user = await User.create({
-              googleId: profile.id,
-              name: profile.displayName,
-              email: email,
-              role: role,
-              avatar: profile.photos[0]?.value || null,
-            });
+            // Fallback: cari berdasarkan email (misalnya, user dev-mock lama)
+            user = await User.findOne({ email: email });
+
+            if (user) {
+              // Update googleId ke yang asli dari Google OAuth + sinkronkan role
+              user.googleId = profile.id;
+              user.name = profile.displayName;
+              user.role = role; // sinkronkan role (misal: override admin)
+              user.avatar = profile.photos[0]?.value || user.avatar;
+              await user.save();
+            } else {
+              // Buat user baru jika benar-benar belum ada
+              user = await User.create({
+                googleId: profile.id,
+                name: profile.displayName,
+                email: email,
+                role: role,
+                avatar: profile.photos[0]?.value || null,
+              });
+            }
           } else {
-            // Update avatar jika berubah
+            // Update avatar dan sinkronkan role jika berubah
             user.avatar = profile.photos[0]?.value || user.avatar;
+            user.role = role; // pastikan role selalu sinkron dengan override list
             await user.save();
           }
 

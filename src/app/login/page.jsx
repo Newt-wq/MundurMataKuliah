@@ -1,15 +1,32 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import { useSession } from "@/context/SessionContext";
 import { FcGoogle } from "react-icons/fc";
-import { Loader2, Info, CheckCircle2, ShieldCheck } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Loader2, Info, CheckCircle2, XCircle, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
-  const { currentUser, login, devLogin, isLoading } = useSession();
+// Inner component — menggunakan useSearchParams, wajib dibungkus Suspense
+function LoginPageInner() {
+  const { currentUser, login, isLoading } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [loginError, setLoginError] = useState(null);
+
+  // Deteksi error dari redirect backend (query param ?error=...)
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error === "domain_not_allowed") {
+      setLoginError(
+        "Akses ditolak! Akun Google Anda tidak terdaftar sebagai civitas akademika Universitas Paramadina. Pastikan Anda menggunakan email @students.paramadina.ac.id atau @paramadina.ac.id."
+      );
+    } else if (error === "auth_failed") {
+      setLoginError(
+        "Login gagal! Terjadi kesalahan saat proses autentikasi Google. Silakan coba lagi."
+      );
+    }
+  }, [searchParams]);
 
   // If already logged in, redirect away
   useEffect(() => {
@@ -26,13 +43,6 @@ export default function LoginPage() {
     login("mahasiswa");
   };
 
-  const handleDevLogin = async (role) => {
-    try {
-      await devLogin(role);
-    } catch (err) {
-      alert("Gagal Dev Login: " + err.message);
-    }
-  };
 
   return (
     <div className="flex-1 flex justify-center items-center py-10 px-4 sm:px-6 bg-white min-h-[calc(100vh-80px)]">
@@ -79,6 +89,23 @@ export default function LoginPage() {
               Silakan masuk untuk melanjutkan ke akun Anda.
             </p>
           </div>
+
+          {/* Error Alert Popup — Muncul saat login gagal (domain tidak diizinkan) */}
+          {loginError && (
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3.5 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+              <XCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-rose-800 mb-0.5">Login Gagal</p>
+                <p className="text-[11px] text-rose-700 leading-relaxed">{loginError}</p>
+              </div>
+              <button
+                onClick={() => setLoginError(null)}
+                className="shrink-0 text-rose-400 hover:text-rose-600 cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {/* Enriched Info Callout: Syarat & Ketentuan Pengajuan */}
           <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-left space-y-2.5 shadow-xs">
@@ -128,28 +155,7 @@ export default function LoginPage() {
               </span>
             </button>
 
-            {/* Quick Demo/Dev Login for local testing & UAS presentation */}
-            <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider text-center block">
-                Opsi Demo / Testing UAS (Bypass Google OAuth)
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleDevLogin("mahasiswa")}
-                  className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition cursor-pointer text-center"
-                >
-                  👨‍🎓 Demo Mahasiswa
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDevLogin("admin")}
-                  className="w-full py-2 px-3 bg-blue-50 hover:bg-blue-100 text-[#005493] font-semibold rounded-xl text-xs transition cursor-pointer text-center"
-                >
-                  👨‍💼 Demo Admin Kaprodi
-                </button>
-              </div>
-            </div>
+
           </div>
 
           {/* Footer branding */}
@@ -163,5 +169,18 @@ export default function LoginPage() {
 
       </div>
     </div>
+  );
+}
+
+// Export utama — membungkus LoginPageInner dengan Suspense (wajib untuk useSearchParams)
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 flex justify-center items-center py-10">
+        <Loader2 className="w-8 h-8 animate-spin text-[#005493]" />
+      </div>
+    }>
+      <LoginPageInner />
+    </Suspense>
   );
 }
